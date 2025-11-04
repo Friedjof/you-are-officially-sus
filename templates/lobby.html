@@ -60,21 +60,69 @@
 </head>
 <body hx-ext="sse" sse-connect="/sse/{{.RoomCode}}">
     <div class="container">
-        <header>
+        <header class="lobby-header">
             <h1>Room Lobby</h1>
-            <div class="room-code-display">
-                <strong>{{.RoomCode}}</strong>
-                <div style="margin-top:0.5rem;">
-                     <button id="copy-code" class="btn btn-compact" type="button" aria-label="Copy room code" title="Copy room code">Copy</button>
-                     <span id="copy-feedback" class="text-muted" role="status" aria-live="polite" style="margin-left:0.5rem; display:none;">Copied!</span>
+            <div class="lobby-top">
+                <div class="room-join">
+                    {{if .QRCodeDataURL}}
+                    <div class="room-qr">
+                        <p class="text-muted room-qr-label">Scan to join</p>
+                        <img src="{{.QRCodeDataURL}}" alt="QR code to join lobby" class="room-qr-image">
+                        <div class="room-code-inline" aria-label="Room code">
+                            <span class="room-code-inline-label">Code</span>
+                            <span class="room-code-inline-value">{{.RoomCode}}</span>
+                            <button id="copy-code" class="btn btn-compact" type="button" aria-label="Copy room code" title="Copy room code">Copy</button>
+                            <span id="copy-feedback" class="text-muted room-code-feedback" role="status" aria-live="polite">Copied!</span>
+                        </div>
+                    </div>
+                    {{else}}
+                    <div class="room-code-display">
+                        <strong>{{.RoomCode}}</strong>
+                        <div style="margin-top:0.5rem;">
+                            <button id="copy-code" class="btn btn-compact" type="button" aria-label="Copy room code" title="Copy room code">Copy</button>
+                            <span id="copy-feedback" class="text-muted room-code-feedback" role="status" aria-live="polite">Copied!</span>
+                        </div>
+                    </div>
+                    {{end}}
+                </div>
+                <div class="lobby-status">
+                    {{if .IsHost}}
+                    <div id="host-controls" class="card lobby-status-card" sse-swap="controls-update" aria-label="Host controls">
+                        {{if ge (len .Players) 3}}
+                        <div class="lobby-status-body">
+                            <p class="lobby-status-title">Ready to start?</p>
+                            <p class="text-muted">Kick things off as soon as everyone is ready.</p>
+                        </div>
+                        <div class="button-stack lobby-status-actions">
+                            <form hx-post="/start-game/{{.RoomCode}}">
+                                <button type="submit" class="btn btn-primary" aria-label="Start game">Start Game</button>
+                            </form>
+                            <form hx-post="/close-lobby/{{.RoomCode}}">
+                                <button type="submit" class="btn btn-danger" aria-label="Close lobby">Close Lobby</button>
+                            </form>
+                        </div>
+                        {{else}}
+                        <div class="lobby-status-body">
+                            <p class="lobby-status-title">Waiting for players to join...</p>
+                            <p class="text-muted">Need at least 3 players to start</p>
+                        </div>
+                        <div class="button-stack lobby-status-actions">
+                            <form hx-post="/close-lobby/{{.RoomCode}}">
+                                <button type="submit" class="btn btn-danger" aria-label="Close lobby">Close Lobby</button>
+                            </form>
+                        </div>
+                        {{end}}
+                    </div>
+                    {{else}}
+                    <div id="host-controls" class="card lobby-status-card" sse-swap="controls-update">
+                        <div class="lobby-status-body">
+                            <p class="lobby-status-title">Waiting for host to start the game...</p>
+                            <p class="text-muted">Hang tight while the host gathers everyone.</p>
+                        </div>
+                    </div>
+                    {{end}}
                 </div>
             </div>
-            {{if .QRCodeDataURL}}
-            <div style="margin-top: 1.5rem; text-align: center;">
-                <p class="text-muted" style="margin-bottom: 0.5rem;">Scan to join</p>
-                <img src="{{.QRCodeDataURL}}" alt="QR code to join lobby" style="max-width: 200px; border: 2px solid #ddd; border-radius: 8px; padding: 8px; background: white;">
-            </div>
-            {{end}}
         </header>
 
         <main>
@@ -84,33 +132,6 @@
             <!-- Host notification message -->
             <div id="host-notification-display" sse-swap="host-changed"></div>
             
-            {{if .IsHost}}
-             <div id="host-controls" class="card sticky-top" sse-swap="controls-update" aria-label="Host controls">
-                 {{if ge (len .Players) 3}}
-                  <div class="button-stack">
-                     <form hx-post="/start-game/{{.RoomCode}}">
-                         <button type="submit" class="btn btn-primary" aria-label="Start game">Start Game</button>
-                     </form>
-                     <form hx-post="/close-lobby/{{.RoomCode}}">
-                         <button type="submit" class="btn btn-danger" aria-label="Close lobby">Close Lobby</button>
-                     </form>
-                  </div>
-                 {{else}}
-                 <p>Waiting for players to join...</p>
-                 <p class="text-muted">Need at least 3 players to start</p>
-                  <div class="button-stack">
-                     <form hx-post="/close-lobby/{{.RoomCode}}">
-                         <button type="submit" class="btn btn-danger" aria-label="Close lobby">Close Lobby</button>
-                     </form>
-                  </div>
-                 {{end}}
-             </div>
-            {{else}}
-            <div id="host-controls" class="card sticky-top" sse-swap="controls-update">
-                <p>Waiting for host to start the game...</p>
-            </div>
-            {{end}}
-
             <div id="player-list-card" class="card" sse-swap="player-update">
                 <h2>Players ({{len .Players}})</h2>
                 <ul class="player-list">
