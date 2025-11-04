@@ -57,6 +57,8 @@ services:
   app:
     image: ghcr.io/aaronzipp/you-are-officially-sus:latest
     restart: unless-stopped
+    environment:
+      - BASE_URL=http://localhost:8080
     ports:
       - "8080:8080"
 ```

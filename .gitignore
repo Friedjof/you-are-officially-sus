@@ -1,2 +1,5 @@
-you-are-officially-sus
+tmp/
+
 server.log
+
+.env
