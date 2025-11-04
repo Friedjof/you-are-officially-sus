@@ -36,18 +36,20 @@ func GetUniqueRoomCode(lobbyStore *store.LobbyStore) string {
 
 // PhasePathFor returns the URL path for a given game phase
 func PhasePathFor(roomCode string, status models.GameStatus) string {
-	switch status {
-	case models.StatusReadyCheck:
-		return "/game/" + roomCode + "/confirm-reveal"
-	case models.StatusRoleReveal:
-		return "/game/" + roomCode + "/roles"
-	case models.StatusPlaying:
-		return "/game/" + roomCode + "/play"
-	case models.StatusVoting:
-		return "/game/" + roomCode + "/voting"
-	case models.StatusFinished:
-		return "/results/" + roomCode
-	default:
-		return "/lobby/" + roomCode
-	}
+switch status {
+case models.StatusWordCollection:
+return "/game/" + roomCode + "/word-collection"
+case models.StatusReadyCheck:
+return "/game/" + roomCode + "/confirm-reveal"
+case models.StatusRoleReveal:
+return "/game/" + roomCode + "/roles"
+case models.StatusPlaying:
+return "/game/" + roomCode + "/play"
+case models.StatusVoting:
+return "/game/" + roomCode + "/voting"
+case models.StatusFinished:
+return "/results/" + roomCode
+default:
+return "/lobby/" + roomCode
+}
 }

@@ -1,0 +1,24 @@
+<script>
+// Game mode selection handler
+(function() {
+    function initGameModeSelection() {
+        const gameModeRadios = document.querySelectorAll('input[name="gameMode"]');
+        const selectedModeInput = document.getElementById('selected-mode');
+        
+        gameModeRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.checked && selectedModeInput) {
+                    selectedModeInput.value = this.value;
+                }
+            });
+        });
+    }
+    
+    // Initialize immediately if DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initGameModeSelection);
+    } else {
+        initGameModeSelection();
+    }
+})();
+</script>

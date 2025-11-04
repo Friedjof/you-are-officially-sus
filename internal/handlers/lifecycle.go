@@ -22,8 +22,12 @@ func (ctx *Context) HandleStartGame(w http.ResponseWriter, r *http.Request) {
 	}
 
 	roomCode := strings.TrimPrefix(r.URL.Path, "/start-game/")
+	gameMode := r.FormValue("mode")
+	if gameMode == "" {
+		gameMode = "standard" // default to standard mode
+	}
 
-	log.Printf("HandleStartGame: roomCode=%s", roomCode)
+	log.Printf("HandleStartGame: roomCode=%s mode=%s", roomCode, gameMode)
 
 	lobby, exists := ctx.LobbyStore.Get(roomCode)
 	if !exists {
@@ -69,56 +73,81 @@ func (ctx *Context) HandleStartGame(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("HandleStartGame: creating game for lobby %s", roomCode)
 
-	// Create new game
-	newGame := &models.Game{
-		Location:         &ctx.Locations[rand.Intn(len(ctx.Locations))],
-		PlayerInfo:       make(map[string]*models.GamePlayerInfo),
-		Status:           models.StatusReadyCheck,
-		ReadyToReveal:    make(map[string]bool),
-		ReadyAfterReveal: make(map[string]bool),
-		ReadyToVote:      make(map[string]bool),
-		Votes:            make(map[string]string),
-		VoteRound:        1,
-	}
-	// Pre-seed current phase readiness map with all players
-	for id := range lobby.Players {
-		newGame.ReadyToReveal[id] = false
-	}
+// Create new game
+newGame := &models.Game{
+Mode:             models.GameMode(gameMode),
+PlayerInfo:       make(map[string]*models.GamePlayerInfo),
+ReadyToReveal:    make(map[string]bool),
+ReadyAfterReveal: make(map[string]bool),
+ReadyToVote:      make(map[string]bool),
+Votes:            make(map[string]string),
+VoteRound:        1,
+}
 
-	// Assign spy
-	playerIDs := make([]string, 0, len(lobby.Players))
-	for id := range lobby.Players {
-		playerIDs = append(playerIDs, id)
-	}
-	spyID := playerIDs[rand.Intn(len(playerIDs))]
-	newGame.SpyID = spyID
-	newGame.SpyName = lobby.Players[spyID].Name
+// Set initial status and location based on game mode
+if gameMode == "custom_words" {
+newGame.Status = models.StatusWordCollection
+newGame.CustomWords = make(map[string]string)
+newGame.WordsSubmitted = make(map[string]bool)
+// Initialize word submission tracking
+for id := range lobby.Players {
+newGame.WordsSubmitted[id] = false
+}
+} else {
+newGame.Status = models.StatusReadyCheck
+newGame.Location = &ctx.Locations[rand.Intn(len(ctx.Locations))]
+// Pre-seed current phase readiness map with all players
+for id := range lobby.Players {
+newGame.ReadyToReveal[id] = false
+}
+}
 
-	// Assign challenges and roles
-	shuffledChallenges := make([]string, len(ctx.Challenges))
-	copy(shuffledChallenges, ctx.Challenges)
-	rand.Shuffle(len(shuffledChallenges), func(i, j int) {
-		shuffledChallenges[i], shuffledChallenges[j] = shuffledChallenges[j], shuffledChallenges[i]
-	})
+// For standard mode, assign spy and challenges immediately
+// For custom words mode, we delay spy assignment until after word collection
+if gameMode == "standard" {
+// Assign spy
+playerIDs := make([]string, 0, len(lobby.Players))
+for id := range lobby.Players {
+playerIDs = append(playerIDs, id)
+}
+spyID := playerIDs[rand.Intn(len(playerIDs))]
+newGame.SpyID = spyID
+newGame.SpyName = lobby.Players[spyID].Name
 
-	for i, id := range playerIDs {
-		newGame.PlayerInfo[id] = &models.GamePlayerInfo{
-			Challenge: shuffledChallenges[i%len(shuffledChallenges)],
-			IsSpy:     id == newGame.SpyID,
-		}
-	}
+// Assign challenges and roles
+shuffledChallenges := make([]string, len(ctx.Challenges))
+copy(shuffledChallenges, ctx.Challenges)
+rand.Shuffle(len(shuffledChallenges), func(i, j int) {
+shuffledChallenges[i], shuffledChallenges[j] = shuffledChallenges[j], shuffledChallenges[i]
+})
 
-	lobby.CurrentGame = newGame
-	lobby.Unlock()
+for i, id := range playerIDs {
+newGame.PlayerInfo[id] = &models.GamePlayerInfo{
+Challenge: shuffledChallenges[i%len(shuffledChallenges)],
+IsSpy:     id == newGame.SpyID,
+}
+}
+}
 
-	log.Printf("HandleStartGame: game created, broadcasting redirect to confirm-reveal")
+lobby.CurrentGame = newGame
+lobby.Unlock()
 
-	// Broadcast HTMX redirect snippet to all clients to go to confirm-reveal
-	sse.Broadcast(lobby, sse.EventNavRedirect, ctx.RedirectSnippet(roomCode, game.PhasePathFor(roomCode, models.StatusReadyCheck)))
+// Determine redirect path based on game mode
+var redirectPath string
+if gameMode == "custom_words" {
+redirectPath = game.PhasePathFor(roomCode, models.StatusWordCollection)
+log.Printf("HandleStartGame: game created, broadcasting redirect to word-collection")
+} else {
+redirectPath = game.PhasePathFor(roomCode, models.StatusReadyCheck)
+log.Printf("HandleStartGame: game created, broadcasting redirect to confirm-reveal")
+}
 
-	log.Printf("HandleStartGame: complete")
-	w.Header().Set("HX-Redirect", game.PhasePathFor(roomCode, models.StatusReadyCheck))
-	w.WriteHeader(http.StatusOK)
+// Broadcast HTMX redirect snippet to all clients
+sse.Broadcast(lobby, sse.EventNavRedirect, ctx.RedirectSnippet(roomCode, redirectPath))
+
+log.Printf("HandleStartGame: complete")
+w.Header().Set("HX-Redirect", redirectPath)
+w.WriteHeader(http.StatusOK)
 }
 
 // HandleRestartGame resets the game and returns to lobby

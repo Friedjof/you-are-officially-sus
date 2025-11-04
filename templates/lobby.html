@@ -55,6 +55,18 @@
                     showFeedback(ok ? 'Copied!' : 'Copy failed');
                 });
             }
+
+            // Handle game mode selection
+            const gameModeRadios = document.querySelectorAll('input[name="gameMode"]');
+            const selectedModeInput = document.getElementById('selected-mode');
+            
+            gameModeRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.checked && selectedModeInput) {
+                        selectedModeInput.value = this.value;
+                    }
+                });
+            });
         });
     </script>
 </head>
@@ -91,10 +103,32 @@
                         {{if ge (len .Players) 3}}
                         <div class="lobby-status-body">
                             <p class="lobby-status-title">Ready to start?</p>
-                            <p class="text-muted">Kick things off as soon as everyone is ready.</p>
+                            <p class="text-muted">Choose your game mode and kick things off!</p>
+                            
+                            <div class="game-mode-selection" style="margin: 1rem 0;">
+                                <div style="margin-bottom: 0.5rem;">
+                                    <label style="display: flex; align-items: center; margin-bottom: 0.25rem;">
+                                        <input type="radio" name="gameMode" value="standard" checked style="margin-right: 0.5rem;">
+                                        <strong>Standard Mode</strong>
+                                    </label>
+                                    <p class="text-muted" style="margin: 0 0 0 1.5rem; font-size: 0.9em;">
+                                        Random word from our collection
+                                    </p>
+                                </div>
+                                <div>
+                                    <label style="display: flex; align-items: center; margin-bottom: 0.25rem;">
+                                        <input type="radio" name="gameMode" value="custom_words" style="margin-right: 0.5rem;">
+                                        <strong>Custom Words Mode</strong>
+                                    </label>
+                                    <p class="text-muted" style="margin: 0 0 0 1.5rem; font-size: 0.9em;">
+                                        Everyone submits a word, one is chosen randomly
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                         <div class="button-stack lobby-status-actions">
-                            <form hx-post="/start-game/{{.RoomCode}}">
+                            <form hx-post="/start-game/{{.RoomCode}}" id="start-game-form">
+                                <input type="hidden" name="mode" id="selected-mode" value="standard">
                                 <button type="submit" class="btn btn-primary" aria-label="Start game">Start Game</button>
                             </form>
                             <form hx-post="/close-lobby/{{.RoomCode}}">

@@ -107,13 +107,26 @@ func (ctx *Context) ReadyCount(ready, total int, label string) string {
 
 // VoteCount generates HTML for vote count display
 func (ctx *Context) VoteCount(count, total int) string {
-	return ctx.ExecutePartial("vote_count.html", struct {
-		VoteCount  int
-		TotalCount int
-	}{
-		VoteCount:  count,
-		TotalCount: total,
-	})
+return ctx.ExecutePartial("vote_count.html", struct {
+VoteCount  int
+TotalCount int
+}{
+VoteCount:  count,
+TotalCount: total,
+})
+}
+
+// WordCollectionCount generates HTML for word collection count display
+func (ctx *Context) WordCollectionCount(submitted, total int) string {
+return ctx.ExecutePartial("ready_count.html", struct {
+ReadyCount int
+TotalCount int
+Label      string
+}{
+ReadyCount: submitted,
+TotalCount: total,
+Label:      "players have submitted words",
+})
 }
 
 // VotedConfirmation generates HTML for "you voted" confirmation

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submit Your Word - You Are Officially Sus</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js" integrity="sha384-/TgkGk7p307TH7EXJDuUlgG3Ce1UVolAOFopFekQkkXihi5u/6OCvVKyz1W+idaz" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/htmx-ext-sse@2.2.4" integrity="sha384-A986SAtodyH8eg8x8irJnYUk7i9inVQqYigD6qZ9evobksGNIXfeFvDwLSHcp31N" crossorigin="anonymous"></script>
+    <style>
+        .word-input {
+            width: 100%;
+            padding: 0.75rem;
+            font-size: 1rem;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+        }
+        .submit-button {
+            width: 100%;
+        }
+        .status-text {
+            margin-top: 1rem;
+            text-align: center;
+        }
+        .host-panel {
+            margin-top: 1rem;
+            border-left: 4px solid #007bff;
+        }
+        .player-status {
+            margin: 0.5rem 0;
+            padding-left: 1.5rem;
+        }
+        .submitted {
+            color: green;
+        }
+        .waiting {
+            color: #666;
+        }
+    </style>
+</head>
+<body hx-ext="sse" sse-connect="/sse/{{.RoomCode}}">
+    <div class="container">
+        <header>
+            <h1>Submit Your Word</h1>
+            <p class="text-muted">Everyone needs to submit a word. One will be randomly chosen for the game!</p>
+        </header>
+
+        <main>
+            <div style="display:none;" sse-swap="nav-redirect"></div>
+
+            <div class="card">
+                {{if .HasSubmittedWord}}
+                <div class="text-center">
+                    <h2>✓ Word Submitted!</h2>
+                    <p>You submitted: <strong>"{{.SubmittedWord}}"</strong></p>
+                    <p class="text-muted">Waiting for other players to submit their words...</p>
+                    
+                    <div id="word-collection-status" sse-swap="word-collection-count" class="status-text">
+                        <p><strong>{{.WordsSubmittedCount}}</strong> of <strong>{{.TotalPlayers}}</strong> players have submitted words</p>
+                    </div>
+                </div>
+                {{else}}
+                <div>
+                    <h2>Submit Your Word</h2>
+                    <p class="text-muted">Enter any word or place you'd like. Keep it fun and appropriate!</p>
+                    
+                    <form hx-post="/game/{{.RoomCode}}/submit-word" style="margin-top: 1rem;">
+                        <div style="margin-bottom: 1rem;">
+                            <label for="word-input" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Your Word:</label>
+                            <input type="text" id="word-input" name="word" class="word-input" placeholder="e.g., Library, Beach, Restaurant..." required maxlength="50" autocomplete="off">
+                        </div>
+                        <button type="submit" class="btn btn-primary submit-button">Submit Word</button>
+                    </form>
+
+                    <div id="word-collection-status" sse-swap="word-collection-count" class="status-text">
+                        <p><strong>{{.WordsSubmittedCount}}</strong> of <strong>{{.TotalPlayers}}</strong> players have submitted words</p>
+                    </div>
+                </div>
+                {{end}}
+            </div>
+
+            {{if .IsHost}}
+            <div class="card host-panel">
+                <h3>Host Controls</h3>
+                <p class="text-muted">As the host, you can see the progress but you also need to submit a word!</p>
+                
+                <div style="margin-top: 1rem;">
+                    <h4>Player Status:</h4>
+                    <ul class="player-status">
+                        {{range .Players}}
+                        <li>
+                            {{.Name}} 
+                            {{if index $.WordsSubmitted .ID}}
+                                <span class="submitted">✓ Submitted</span>
+                            {{else}}
+                                <span class="waiting">Waiting...</span>
+                            {{end}}
+                        </li>
+                        {{end}}
+                    </ul>
+                </div>
+            </div>
+            {{end}}
+        </main>
+
+        <footer>
+            <p class="text-muted">Once everyone has submitted a word, the game will automatically continue!</p>
+        </footer>
+    </div>
+</body>
+</html>
