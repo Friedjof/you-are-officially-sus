@@ -31,38 +31,64 @@ func (ctx *Context) ExecutePartial(name string, data interface{}) string {
 	return buf.String()
 }
 
+type playerListViewData struct {
+	Players    []*models.Player
+	Scores     map[string]*models.PlayerScore
+	HasResults bool
+	HostID     string
+}
+
+func (ctx *Context) buildPlayerListData(players map[string]*models.Player, scores map[string]*models.PlayerScore, hostID string) playerListViewData {
+	hasResults := false
+	for _, score := range scores {
+		if score == nil {
+			continue
+		}
+		if score.GamesWon > 0 || score.GamesLost > 0 {
+			hasResults = true
+			break
+		}
+	}
+
+	var orderedPlayers []*models.Player
+	if hasResults {
+		orderedPlayers = render.GetPlayerListSortedByScore(players, scores)
+	} else {
+		orderedPlayers = render.GetPlayerList(players)
+	}
+
+	return playerListViewData{
+		Players:    orderedPlayers,
+		Scores:     scores,
+		HasResults: hasResults,
+		HostID:     hostID,
+	}
+}
+
 // PlayerList generates HTML for the player list using template partials
-func (ctx *Context) PlayerList(players map[string]*models.Player) string {
-	return ctx.ExecutePartial("player_list.html", struct {
-		Players []*models.Player
-	}{
-		Players: render.GetPlayerList(players),
-	})
+func (ctx *Context) PlayerList(players map[string]*models.Player, scores map[string]*models.PlayerScore, hostID string) string {
+	data := ctx.buildPlayerListData(players, scores, hostID)
+	return ctx.ExecutePartial("player_list.html", data)
 }
 
 // HostControls generates HTML for host controls using template partials
 func (ctx *Context) HostControls(lobby *models.Lobby, playerID string) string {
+	hostName := ""
+	if host, ok := lobby.Players[lobby.Host]; ok && host != nil {
+		hostName = host.Name
+	}
 	return ctx.ExecutePartial("host_controls.html", struct {
 		IsHost      bool
 		PlayerCount int
 		InGame      bool
 		RoomCode    string
+		HostName    string
 	}{
 		IsHost:      lobby.Host == playerID,
 		PlayerCount: len(lobby.Players),
 		InGame:      lobby.CurrentGame != nil,
 		RoomCode:    lobby.Code,
-	})
-}
-
-// ScoreTable generates HTML for the score table using template partials
-func (ctx *Context) ScoreTable(lobby *models.Lobby) string {
-	return ctx.ExecutePartial("score_table.html", struct {
-		Players []*models.Player
-		Scores  map[string]*models.PlayerScore
-	}{
-		Players: render.GetPlayerListSortedByScore(lobby.Players, lobby.Scores),
-		Scores:  lobby.Scores,
+		HostName:    hostName,
 	})
 }
 

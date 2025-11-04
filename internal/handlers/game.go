@@ -387,6 +387,7 @@ func (ctx *Context) gameHandleVoteCookie(w http.ResponseWriter, r *http.Request,
 	var voteCountMsg string
 	var shouldFinish bool
 	var shouldRevote bool
+	var scoresUpdated bool
 
 	lobby.Lock()
 	g := lobby.CurrentGame
@@ -441,6 +442,7 @@ func (ctx *Context) gameHandleVoteCookie(w http.ResponseWriter, r *http.Request,
 				}
 			}
 			shouldFinish = true
+			scoresUpdated = true
 		}
 	}
 
@@ -448,6 +450,9 @@ func (ctx *Context) gameHandleVoteCookie(w http.ResponseWriter, r *http.Request,
 	lobby.Unlock()
 
 	sse.Broadcast(lobby, sse.EventVoteCount, voteCountMsg)
+	if scoresUpdated {
+		sse.Broadcast(lobby, sse.EventPlayerUpdate, ctx.PlayerList(lobby.Players, lobby.Scores, lobby.Host))
+	}
 	if shouldRevote {
 		sse.Broadcast(lobby, sse.EventNavRedirect, ctx.RedirectSnippet(roomCode, game.PhasePathFor(roomCode, models.StatusVoting)))
 	} else if shouldFinish {

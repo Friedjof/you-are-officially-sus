@@ -10,7 +10,6 @@ import (
 
 	"github.com/aaronzipp/you-are-officially-sus/internal/game"
 	"github.com/aaronzipp/you-are-officially-sus/internal/models"
-	"github.com/aaronzipp/you-are-officially-sus/internal/render"
 	"github.com/aaronzipp/you-are-officially-sus/internal/sse"
 	"github.com/google/uuid"
 	"github.com/skip2/go-qrcode"
@@ -151,8 +150,7 @@ func (ctx *Context) HandleJoinLobby(w http.ResponseWriter, r *http.Request) {
 	lobby.Unlock()
 
 	// Broadcast update to all clients
-	sse.Broadcast(lobby, sse.EventPlayerUpdate, ctx.PlayerList(lobby.Players))
-	sse.Broadcast(lobby, sse.EventScoreUpdate, ctx.ScoreTable(lobby))
+	sse.Broadcast(lobby, sse.EventPlayerUpdate, ctx.PlayerList(lobby.Players, lobby.Scores, lobby.Host))
 	sse.BroadcastPersonalized(lobby, func(pid string) string {
 		return ctx.HostControls(lobby, pid)
 	}, sse.EventControlsUpdate)
@@ -206,19 +204,31 @@ func (ctx *Context) HandleLobby(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	listData := ctx.buildPlayerListData(lobby.Players, lobby.Scores, lobby.Host)
+	hostName := ""
+	if host, ok := lobby.Players[lobby.Host]; ok && host != nil {
+		hostName = host.Name
+	}
+
 	data := struct {
 		RoomCode      string
 		PlayerID      string
 		Players       []*models.Player
 		IsHost        bool
 		Scores        map[string]*models.PlayerScore
+		HasResults    bool
+		HostID        string
+		HostName      string
 		QRCodeDataURL template.URL
 	}{
 		RoomCode:      lobby.Code,
 		PlayerID:      playerID,
-		Players:       render.GetPlayerList(lobby.Players),
+		Players:       listData.Players,
 		IsHost:        lobby.Host == playerID,
-		Scores:        lobby.Scores,
+		Scores:        listData.Scores,
+		HasResults:    listData.HasResults,
+		HostID:        lobby.Host,
+		HostName:      hostName,
 		QRCodeDataURL: qrDataURL,
 	}
 

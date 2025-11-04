@@ -458,8 +458,7 @@ func (ctx *Context) handleLeaveLogic(w http.ResponseWriter, r *http.Request, roo
 		}
 	} else {
 		// Update player list and scores
-		sse.Broadcast(lobby, sse.EventPlayerUpdate, ctx.PlayerList(lobby.Players))
-		sse.Broadcast(lobby, sse.EventScoreUpdate, ctx.ScoreTable(lobby))
+		sse.Broadcast(lobby, sse.EventPlayerUpdate, ctx.PlayerList(lobby.Players, lobby.Scores, lobby.Host))
 		sse.BroadcastPersonalized(lobby, func(pid string) string {
 			return ctx.HostControls(lobby, pid)
 		}, sse.EventControlsUpdate)
@@ -733,8 +732,7 @@ func (ctx *Context) handlePlayerDisconnect(roomCode, playerID string) {
 		}
 	} else {
 		// Update player list and scores
-		sse.Broadcast(lobby, sse.EventPlayerUpdate, ctx.PlayerList(lobby.Players))
-		sse.Broadcast(lobby, sse.EventScoreUpdate, ctx.ScoreTable(lobby))
+		sse.Broadcast(lobby, sse.EventPlayerUpdate, ctx.PlayerList(lobby.Players, lobby.Scores, lobby.Host))
 		sse.BroadcastPersonalized(lobby, func(pid string) string {
 			return ctx.HostControls(lobby, pid)
 		}, sse.EventControlsUpdate)

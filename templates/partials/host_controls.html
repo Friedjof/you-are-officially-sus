@@ -1,8 +1,15 @@
 {{if .InGame}}
-{{/* No controls during game */}}
+    <div class="lobby-status-body">
+        <p class="lobby-status-title">Game in progress</p>
+        <p class="text-muted">Hang tight while the current round wraps up.</p>
+    </div>
 {{else if .IsHost}}
     {{if ge .PlayerCount 3}}
-    <div class="button-stack">
+    <div class="lobby-status-body">
+        <p class="lobby-status-title">Ready to start?</p>
+        <p class="text-muted">Kick things off as soon as everyone is ready.</p>
+    </div>
+    <div class="button-stack lobby-status-actions">
         <form hx-post="/start-game/{{.RoomCode}}">
             <button type="submit" class="btn btn-primary">Start Game</button>
         </form>
@@ -11,14 +18,20 @@
         </form>
     </div>
     {{else}}
-    <p>Waiting for players to join...</p>
-    <p class="text-muted">Need at least 3 players to start</p>
-    <div class="button-stack">
+    <div class="lobby-status-body">
+        <p class="lobby-status-title">Waiting for players to join...</p>
+        <p class="text-muted">Need at least 3 players to start</p>
+    </div>
+    <div class="button-stack lobby-status-actions">
         <form hx-post="/close-lobby/{{.RoomCode}}">
             <button type="submit" class="btn btn-danger">Close Lobby</button>
         </form>
     </div>
     {{end}}
 {{else}}
-<p>Waiting for host to start the game...</p>
+    {{$host := .HostName}}
+    <div class="lobby-status-body">
+        <p class="lobby-status-title">Waiting for {{if $host}}{{$host}}{{else}}the host{{end}} to start the game...</p>
+        <p class="text-muted">{{if $host}}{{$host}}{{else}}The host{{end}} will kick things off once everyone is ready.</p>
+    </div>
 {{end}}

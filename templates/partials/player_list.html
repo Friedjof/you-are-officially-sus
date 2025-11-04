@@ -1,8 +1,37 @@
 <h2>Players ({{len .Players}})</h2>
-<ul class="player-list">
-    {{range .Players}}
-    <li class="player-item">
-        <span class="player-name">{{.Name}}</span>
-    </li>
-    {{end}}
-</ul>
+<table class="score-table" aria-label="Lobby players with wins and losses">
+    <thead>
+        <tr>
+            <th scope="col">Player</th>
+            <th scope="col" title="Games won">Wins</th>
+            <th scope="col">Losses</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Players}}
+        {{$score := index $.Scores .ID}}
+        <tr>
+            <td class="score-player">
+                <span class="player-name">{{.Name}}</span>
+                {{if eq $.HostID .ID}}
+                <span class="badge-pill badge-host" aria-label="Lobby organizer">Host</span>
+                {{end}}
+            </td>
+            <td>
+                {{if and $score (gt $score.GamesWon 0)}}
+                <span class="badge-pill badge-win">{{$score.GamesWon}}</span>
+                {{else}}
+                <span class="score-value">&mdash;</span>
+                {{end}}
+            </td>
+            <td>
+                {{if and $score (gt $score.GamesLost 0)}}
+                <span class="badge-pill badge-loss">{{$score.GamesLost}}</span>
+                {{else}}
+                <span class="score-value">&mdash;</span>
+                {{end}}
+            </td>
+        </tr>
+        {{end}}
+    </tbody>
+</table>

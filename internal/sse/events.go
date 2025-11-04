@@ -4,7 +4,6 @@ package sse
 const (
 	EventNavRedirect    = "nav-redirect"
 	EventPlayerUpdate   = "player-update"
-	EventScoreUpdate    = "score-update"
 	EventControlsUpdate = "controls-update"
 	EventVoteCount      = "vote-count-voting"
 	EventHostChanged    = "host-changed"

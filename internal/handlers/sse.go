@@ -163,18 +163,14 @@ func (ctx *Context) HandleSSE(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "event: %s\n%s\n", eventName, formatSSEData(countHTML))
 	} else {
 		// No game - send lobby data
-		playerListHTML := ctx.PlayerList(lobby.Players)
+		playerListHTML := ctx.PlayerList(lobby.Players, lobby.Scores, lobby.Host)
 		hostControlsHTML := ctx.HostControls(lobby, playerID)
-		scoreTableHTML := ctx.ScoreTable(lobby)
 		lobby.RUnlock()
 		if debug {
 			log.Printf("handleSSE: sending initial lobby data to player %s", playerID)
 		}
 		fmt.Fprintf(w, "event: %s\n%s\n", sse.EventPlayerUpdate, formatSSEData(playerListHTML))
 		fmt.Fprintf(w, "event: %s\n%s\n", sse.EventControlsUpdate, formatSSEData(hostControlsHTML))
-		if scoreTableHTML != "" {
-			fmt.Fprintf(w, "event: %s\n%s\n", sse.EventScoreUpdate, formatSSEData(scoreTableHTML))
-		}
 	}
 	w.(http.Flusher).Flush()
 

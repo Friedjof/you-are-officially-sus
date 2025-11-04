@@ -115,9 +115,10 @@
                     </div>
                     {{else}}
                     <div id="host-controls" class="card lobby-status-card" sse-swap="controls-update">
+                        {{$hostName := .HostName}}
                         <div class="lobby-status-body">
-                            <p class="lobby-status-title">Waiting for host to start the game...</p>
-                            <p class="text-muted">Hang tight while the host gathers everyone.</p>
+                            <p class="lobby-status-title">Waiting for {{if $hostName}}{{$hostName}}{{else}}the host{{end}} to start the game...</p>
+                            <p class="text-muted">{{if $hostName}}{{$hostName}}{{else}}The host{{end}} will kick things off once everyone is ready.</p>
                         </div>
                     </div>
                     {{end}}
@@ -133,47 +134,8 @@
             <div id="host-notification-display" sse-swap="host-changed"></div>
             
             <div id="player-list-card" class="card" sse-swap="player-update">
-                <h2>Players ({{len .Players}})</h2>
-                <ul class="player-list">
-                    {{range .Players}}
-                    <li class="player-item">
-                        <span class="player-name">{{.Name}}</span>
-                    </li>
-                    {{end}}
-                </ul>
+                {{template "player_list.html" .}}
             </div>
-
-            {{if gt (len .Scores) 0}}
-            <div id="score-card" class="card" sse-swap="score-update">
-                <h2>Scores</h2>
-                 <table class="score-table" aria-label="Scoreboard sorted by wins">
-                     <thead>
-                         <tr>
-                             <th>Player</th>
-                             <th aria-sort="descending" title="Sorted by wins (desc)">Wins ↓</th>
-                             <th>Losses</th>
-                         </tr>
-                     </thead>
-                    <tbody>
-                        {{range .Players}}
-                        {{$score := index $.Scores .ID}}
-                        <tr>
-                            <td class="score-player">{{.Name}}</td>
-                            <td>
-                                <span class="badge-pill badge-win">{{if $score}}{{$score.GamesWon}}{{else}}0{{end}}</span>
-                            </td>
-                            <td>
-                                <span class="badge-pill badge-loss">{{if $score}}{{$score.GamesLost}}{{else}}0{{end}}</span>
-                            </td>
-                        </tr>
-                        {{end}}
-                    </tbody>
-                </table>
-            </div>
-            {{else}}
-            <div id="score-card" class="card" sse-swap="score-update" style="display:none;">
-            </div>
-            {{end}}
         </main>
 
         <footer>
